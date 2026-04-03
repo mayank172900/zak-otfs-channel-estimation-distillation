@@ -1,0 +1,5 @@
+inherits: distill_base.yaml
+
+distill_model:
+  variant: lite_m
+

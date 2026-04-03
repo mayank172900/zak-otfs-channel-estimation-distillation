@@ -1,0 +1,14 @@
+inherits: phase3_base.yaml
+
+phase4_inference:
+  channel_mode: blended
+  confidence_floor: 0.0
+  confidence_ceiling: 1.0
+  confidence_scale: 0.25
+  confidence_threshold: 0.8
+  solver: iterative
+
+smoke:
+  phase4_inference:
+    channel_mode: blended
+    solver: dense

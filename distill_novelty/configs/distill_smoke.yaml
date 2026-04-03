@@ -1,0 +1,11 @@
+inherits: distill_base.yaml
+
+distill_training:
+  mode: smoke
+
+distill_evaluation:
+  mode: smoke
+
+benchmark:
+  mode: smoke
+

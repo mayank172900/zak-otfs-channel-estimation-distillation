@@ -1,0 +1,8 @@
+inherits: distill_base.yaml
+
+distill_evaluation:
+  mode: full
+
+benchmark:
+  mode: full
+

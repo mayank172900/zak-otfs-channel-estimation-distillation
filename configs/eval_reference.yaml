@@ -1,0 +1,9 @@
+inherits: eval.yaml
+
+numerics:
+  effective_channel_method: reference
+
+paths:
+  results_dir: results_reference
+  logs_dir: logs_reference
+  report_dir: report_reference

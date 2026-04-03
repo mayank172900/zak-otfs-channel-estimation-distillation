@@ -1,0 +1,137 @@
+{
+  "metric": "nmse",
+  "records": [
+    {
+      "ci_high": 0.08222173775476405,
+      "ci_low": 0.06753913855878636,
+      "data_snr_db": 10.0,
+      "effective_channel_method": "fast",
+      "method": "conventional",
+      "modulation": "bpsk",
+      "nmse": 0.07432526116259396,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.005152903643771424,
+      "ci_low": 0.004682607959402957,
+      "data_snr_db": 10.0,
+      "effective_channel_method": "fast",
+      "method": "teacher",
+      "modulation": "bpsk",
+      "nmse": 0.004901495269150473,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.006229650167952058,
+      "ci_low": 0.005689103150099981,
+      "data_snr_db": 10.0,
+      "effective_channel_method": "fast",
+      "method": "student",
+      "modulation": "bpsk",
+      "nmse": 0.005969364541815594,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "data_snr_db": 10.0,
+      "effective_channel_method": "fast",
+      "method": "perfect",
+      "modulation": "bpsk",
+      "nmse": 0.0,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.08213670647551771,
+      "ci_low": 0.067384684282355,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "conventional",
+      "modulation": "bpsk",
+      "nmse": 0.07487380216363818,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.004536480974027654,
+      "ci_low": 0.00415622917858127,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "teacher",
+      "modulation": "bpsk",
+      "nmse": 0.004351680293912068,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.005447281518223462,
+      "ci_low": 0.005017584834466106,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "student",
+      "modulation": "bpsk",
+      "nmse": 0.005236314761568792,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "perfect",
+      "modulation": "bpsk",
+      "nmse": 0.0,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.08532684676907958,
+      "ci_low": 0.07231947315321305,
+      "data_snr_db": 20.0,
+      "effective_channel_method": "fast",
+      "method": "conventional",
+      "modulation": "bpsk",
+      "nmse": 0.07835844543762505,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.004387636053827009,
+      "ci_low": 0.004040905698027927,
+      "data_snr_db": 20.0,
+      "effective_channel_method": "fast",
+      "method": "teacher",
+      "modulation": "bpsk",
+      "nmse": 0.004226750761736184,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.005302445828128838,
+      "ci_low": 0.004908014303102391,
+      "data_snr_db": 20.0,
+      "effective_channel_method": "fast",
+      "method": "student",
+      "modulation": "bpsk",
+      "nmse": 0.005106310872361064,
+      "pdr_db": 5.0,
+      "realizations": 200
+    },
+    {
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "data_snr_db": 20.0,
+      "effective_channel_method": "fast",
+      "method": "perfect",
+      "modulation": "bpsk",
+      "nmse": 0.0,
+      "pdr_db": 5.0,
+      "realizations": 200
+    }
+  ]
+}

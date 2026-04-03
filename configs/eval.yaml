@@ -1,0 +1,66 @@
+inherits: system.yaml
+
+evaluation:
+  nmse_vs_pdr:
+    modulation: bpsk
+    data_snr_db: 15.0
+    pdr_db: [-5.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0]
+    realizations: 400
+  nmse_vs_snr:
+    modulation: bpsk
+    pdr_db: 5.0
+    data_snr_db: [0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0]
+    realizations: 400
+  ber_vs_pdr:
+    modulation: bpsk
+    data_snr_db: 18.0
+    pdr_db: [-5.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0]
+    target_bit_errors: 200
+    max_bits: 1000000
+    min_frames: 20
+    use_dense: false
+  ber_vs_snr:
+    pdr_db: 5.0
+    data_snr_db: [0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0]
+    modulation: [bpsk, 8qam_cross]
+    target_bit_errors: 200
+    max_bits: 1000000
+    min_frames: 20
+    use_dense: false
+
+anchors:
+  nmse_vs_pdr:
+    pdr_db_10:
+      conventional: 1.75e-2
+      cnn: 1.85e-3
+  ber_vs_pdr:
+    pdr_db_5_bpsk_snr_db_18:
+      conventional: 2.5e-2
+      cnn: 4.7e-4
+      perfect: 3.0e-4
+  ber_vs_snr:
+    bpsk_snr_db_18_pdr_db_5:
+      perfect: 2.6e-4
+      cnn: 4.7e-4
+      conventional: 2.5e-2
+    qam8_snr_db_18_pdr_db_5:
+      perfect: 2.5e-2
+      cnn: 4.0e-2
+      conventional: 1.6e-1
+
+smoke:
+  evaluation:
+    nmse_vs_pdr:
+      realizations: 2
+    nmse_vs_snr:
+      realizations: 2
+    ber_vs_pdr:
+      target_bit_errors: 5
+      max_bits: 5000
+      min_frames: 2
+      use_dense: true
+    ber_vs_snr:
+      target_bit_errors: 5
+      max_bits: 5000
+      min_frames: 2
+      use_dense: true

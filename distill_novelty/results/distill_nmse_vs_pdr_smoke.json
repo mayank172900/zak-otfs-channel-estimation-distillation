@@ -1,0 +1,93 @@
+{
+  "metric": "nmse",
+  "records": [
+    {
+      "ci_high": 0.11771204322576523,
+      "ci_low": 0.05270205810666084,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "conventional",
+      "modulation": "bpsk",
+      "nmse": 0.08520705066621304,
+      "pdr_db": 0.0,
+      "realizations": 2
+    },
+    {
+      "ci_high": 0.018588673323392868,
+      "ci_low": 0.009059017524123192,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "teacher",
+      "modulation": "bpsk",
+      "nmse": 0.01382384542375803,
+      "pdr_db": 0.0,
+      "realizations": 2
+    },
+    {
+      "ci_high": 1.2532026767730713,
+      "ci_low": 1.045050024986267,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "student",
+      "modulation": "bpsk",
+      "nmse": 1.1491263508796692,
+      "pdr_db": 0.0,
+      "realizations": 2
+    },
+    {
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "perfect",
+      "modulation": "bpsk",
+      "nmse": 0.0,
+      "pdr_db": 0.0,
+      "realizations": 2
+    },
+    {
+      "ci_high": 0.11405395716428757,
+      "ci_low": 0.09078612178564072,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "conventional",
+      "modulation": "bpsk",
+      "nmse": 0.10242003947496414,
+      "pdr_db": 20.0,
+      "realizations": 2
+    },
+    {
+      "ci_high": 0.00040803238516673446,
+      "ci_low": 0.000333387462887913,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "teacher",
+      "modulation": "bpsk",
+      "nmse": 0.0003707099240273237,
+      "pdr_db": 20.0,
+      "realizations": 2
+    },
+    {
+      "ci_high": 1.1162114143371582,
+      "ci_low": 1.0892491340637207,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "student",
+      "modulation": "bpsk",
+      "nmse": 1.1027302742004395,
+      "pdr_db": 20.0,
+      "realizations": 2
+    },
+    {
+      "ci_high": 0.0,
+      "ci_low": 0.0,
+      "data_snr_db": 15.0,
+      "effective_channel_method": "fast",
+      "method": "perfect",
+      "modulation": "bpsk",
+      "nmse": 0.0,
+      "pdr_db": 20.0,
+      "realizations": 2
+    }
+  ]
+}

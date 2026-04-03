@@ -1,0 +1,11 @@
+inherits: phase2_base.yaml
+
+phase2_training:
+  checkpoint_name: phase3_best.pt
+  enable_physics_loss: true
+  lambda_phys: 0.2
+
+smoke:
+  phase2_training:
+    enable_physics_loss: true
+    lambda_phys: 0.2

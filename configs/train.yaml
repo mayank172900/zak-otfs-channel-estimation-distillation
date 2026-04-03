@@ -1,0 +1,41 @@
+inherits: system.yaml
+
+dataset:
+  train_size_total: 480000
+  val_size_total: 120000
+  train_size_per_pdr: 80000
+  val_size_per_pdr: 20000
+  training_snr_db: 15.0
+  training_pdr_db: [0.0, 5.0, 20.0, 25.0, 30.0, 35.0]
+  mode: full
+  save_npz: true
+  num_workers: 4
+  materialize_batch_size: 128
+  materialize_num_workers: 4
+  cache_in_ram: false
+
+training:
+  modulation: bpsk
+  batch_size: 64
+  epochs: 50
+  learning_rate: 0.0005
+  auto_resume: true
+  save_epoch_checkpoints: true
+  optimizer: adam
+  scheduler:
+    kind: ReduceLROnPlateau
+    factor: 0.8
+    patience: 3
+    min_lr: 1.0e-06
+  save_best_only: true
+  checkpoint_name: cnn_best.pt
+
+smoke:
+  dataset:
+    train_size_total: 24
+    val_size_total: 12
+    train_size_per_pdr: 4
+    val_size_per_pdr: 2
+  training:
+    epochs: 1
+    batch_size: 4

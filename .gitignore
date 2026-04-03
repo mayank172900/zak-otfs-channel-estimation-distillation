@@ -1,0 +1,52 @@
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+**/.pytest_cache/
+.DS_Store
+*.pyc
+*.pyo
+.Python
+.venv/
+venv/
+.idea/
+.vscode/
+.git-filelist
+
+# Archives and local bundles
+*.zip
+
+# LaTeX intermediates
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+
+# Generic generated artifact buckets
+artifacts/datasets/
+artifacts/checkpoints/
+artifacts/plots/
+artifacts/tables/
+artifacts/logs/
+
+# Baseline generated datasets / temp outputs
+results/datasets/*.npy
+results/tmp_*/
+results/diagnostics/tmp_*/
+logs/checkpoints/
+logs/tmp_*/
+logs_fast/
+results_fast/
+windows_run_res/
+
+# Early novelty branch generated arrays and logs
+novelty_paper/results/adapter_datasets/
+novelty_paper/logs/checkpoints/
+
+# Physics novelty generated datasets, duplicate output folder, and checkpoints
+physics_novelty/results/phase1_datasets/*.npy
+physics_novelty/physics_novelty/
+physics_novelty/logs/checkpoints/
+
+# Distillation checkpoints and local logs
+distill_novelty/logs/checkpoints/

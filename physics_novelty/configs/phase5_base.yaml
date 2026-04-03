@@ -1,0 +1,44 @@
+inherits: phase4_base.yaml
+
+paths:
+  results_dir: results
+  report_dir: report
+
+phase5_evaluation:
+  mode: full
+  checkpoint_path: logs/checkpoints/full_phase3_best.pt
+  save_png: true
+  methods:
+    nmse: [conventional, baseline, refined, blended, perfect]
+    ber: [conventional, baseline, refined, blended, perfect]
+  method_phase4_overrides: {}
+  nmse_vs_pdr:
+    enabled: true
+    modulation: bpsk
+    data_snr_db: 15.0
+    pdr_db: [0.0, 5.0, 20.0, 25.0, 30.0, 35.0]
+    realizations: 200
+  nmse_vs_snr:
+    enabled: true
+    modulation: bpsk
+    data_snr_db: [0.0, 5.0, 10.0, 15.0, 20.0]
+    pdr_db: 10.0
+    realizations: 200
+  ber_vs_pdr:
+    enabled: true
+    modulation: bpsk
+    data_snr_db: 18.0
+    pdr_db: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0]
+    target_bit_errors: 200
+    max_bits: 2000000
+    min_frames: 20
+    solver: iterative
+  ber_vs_snr:
+    enabled: true
+    modulation: [bpsk, 8qam]
+    data_snr_db: [4.0, 8.0, 12.0, 16.0, 20.0]
+    pdr_db: 5.0
+    target_bit_errors: 200
+    max_bits: 2000000
+    min_frames: 20
+    solver: iterative

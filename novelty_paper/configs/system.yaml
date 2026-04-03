@@ -1,0 +1,67 @@
+seed: 12345
+device: auto
+dtype: complex64
+
+frame:
+  nu_p_hz: 30000.0
+  tau_p_s: 3.3333333333333335e-05
+  M: 31
+  N: 37
+  q: 3
+  T_s: 0.0012333333333333332
+  B_hz: 930000.0
+  pilot_delay_bin: 0
+  pilot_doppler_bin: 0
+
+pulse:
+  kind: gs
+  alpha_tau: 0.044
+  alpha_nu: 0.044
+  Omega_tau: 1.0278
+  Omega_nu: 1.0278
+  no_expansion: true
+
+channel:
+  model: vehicular_a
+  num_paths: 6
+  max_doppler_hz: 815.0
+  max_delay_s: 2.51e-06
+  delays_s: [0.0, 3.1e-07, 7.1e-07, 1.09e-06, 1.73e-06, 2.51e-06]
+  relative_powers_db: [0.0, -1.0, -9.0, -10.0, -15.0, -20.0]
+  summation_range: [-1, 0, 1]
+  gain_distribution: complex_gaussian
+  gain_normalization: normalize_to_unit_average_power
+
+estimation:
+  support_center: [0, 0]
+  threshold_multiplier: 3.0
+  thresholding: both
+  use_thresholded_for_detection: true
+  derive_support_from_lattice: true
+
+detection:
+  method: mmse
+  cg_tol: 1.0e-8
+  cg_maxiter: 200
+
+numerics:
+  effective_channel_method: fast
+  pulse_quadrature:
+    delay_points: 2049
+    doppler_points: 2049
+    delay_span: 10.0
+    doppler_span: 10.0
+
+paths:
+  results_dir: results
+  logs_dir: logs
+  report_dir: report
+
+backbone:
+  checkpoint_path: ../logs/checkpoints/full_cnn_best.pt
+
+adapter:
+  default_kind: fb_lara
+  checkpoint_paths:
+    generic: logs/checkpoints/full_generic_best.pt
+    fb_lara: logs/checkpoints/full_fb_lara_best.pt

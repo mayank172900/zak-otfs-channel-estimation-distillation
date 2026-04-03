@@ -1,0 +1,6 @@
+inherits: phase1_base.yaml
+
+phase1_dataset:
+  split: train
+  mode: full
+  total_size: 48000

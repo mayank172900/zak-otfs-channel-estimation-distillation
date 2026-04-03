@@ -1,0 +1,13 @@
+{
+  "device": "mps",
+  "iterations": 20,
+  "mode": "smoke",
+  "student_checkpoint_path": "/Users/goodday/Documents/Sem6/MLC/Paper/distill_novelty/logs/checkpoints/smoke_distill_best.pt",
+  "student_mean_ms": 1.8780292502015072,
+  "student_params": 40049,
+  "student_speedup_vs_teacher": 2.9468357318283585,
+  "teacher_checkpoint_path": "/Users/goodday/Documents/Sem6/MLC/Paper/logs/checkpoints/full_cnn_best.pt",
+  "teacher_mean_ms": 5.534243699912622,
+  "teacher_params": 245473,
+  "warmup": 3
+}

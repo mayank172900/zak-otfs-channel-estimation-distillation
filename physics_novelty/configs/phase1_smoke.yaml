@@ -1,0 +1,6 @@
+inherits: phase1_base.yaml
+
+phase1_dataset:
+  split: smoke
+  mode: smoke
+  total_size: 6

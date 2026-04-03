@@ -1,0 +1,9 @@
+inherits: train.yaml
+
+numerics:
+  effective_channel_method: fast
+
+paths:
+  results_dir: results_fast
+  logs_dir: logs_fast
+  report_dir: report_fast

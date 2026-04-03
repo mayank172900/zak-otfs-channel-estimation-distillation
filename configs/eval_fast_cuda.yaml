@@ -1,0 +1,9 @@
+inherits: eval_fast.yaml
+
+device: cuda
+
+evaluation:
+  ber_vs_pdr:
+    solver: dense_torch
+  ber_vs_snr:
+    solver: dense_torch

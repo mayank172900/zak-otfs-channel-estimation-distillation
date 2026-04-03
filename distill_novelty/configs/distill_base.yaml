@@ -1,0 +1,131 @@
+inherits: ../../configs/system.yaml
+
+paths:
+  results_dir: results
+  logs_dir: logs
+  report_dir: report
+
+teacher_checkpoint_path: ../logs/checkpoints/full_cnn_best.pt
+
+distill_model:
+  variant: lite_l
+
+distill_dataset:
+  train_manifest_path: ../physics_novelty/results/phase1_datasets/train_phase1.json
+  val_manifest_path: ../physics_novelty/results/phase1_datasets/val_phase1.json
+  num_workers: 0
+  mmap_mode: r
+
+distill_training:
+  mode: full
+  batch_size: 64
+  epochs: 30
+  learning_rate: 0.001
+  checkpoint_name: distill_best.pt
+  auto_resume: true
+  save_epoch_checkpoints: true
+  early_stop_patience: 5
+  distill_weight: 0.8
+  truth_weight: 0.2
+  scheduler:
+    factor: 0.8
+    patience: 2
+    min_lr: 1.0e-06
+
+distill_evaluation:
+  mode: full
+  checkpoint_path: null
+  methods:
+    nmse: [conventional, teacher, student, perfect]
+    ber: [conventional, teacher, student, perfect]
+  save_png: true
+  nmse_vs_pdr:
+    enabled: true
+    modulation: bpsk
+    data_snr_db: 15.0
+    pdr_db: [0.0, 5.0, 20.0, 25.0, 30.0, 35.0]
+    realizations: 200
+  nmse_vs_snr:
+    enabled: true
+    modulation: bpsk
+    data_snr_db: [10.0, 15.0, 20.0]
+    pdr_db: 5.0
+    realizations: 200
+  ber_vs_pdr:
+    enabled: true
+    modulation: bpsk
+    data_snr_db: 18.0
+    pdr_db: [0.0, 5.0, 20.0]
+    target_bit_errors: 200
+    max_bits: 2000000
+    min_frames: 20
+    solver: dense
+  ber_vs_snr:
+    enabled: true
+    modulation: [bpsk]
+    data_snr_db: [10.0, 15.0, 18.0]
+    pdr_db: 5.0
+    target_bit_errors: 200
+    max_bits: 2000000
+    min_frames: 20
+    solver: dense
+
+benchmark:
+  mode: full
+  iterations: 50
+  warmup: 5
+  modulation: bpsk
+  data_snr_db: 15.0
+  pdr_db: 5.0
+
+smoke:
+  distill_dataset:
+    train_manifest_path: ../physics_novelty/results/phase1_datasets/smoke_phase1.json
+    val_manifest_path: ../physics_novelty/results/phase1_datasets/smoke_phase1.json
+  distill_training:
+    mode: smoke
+    batch_size: 2
+    epochs: 1
+    auto_resume: false
+    save_epoch_checkpoints: false
+    early_stop_patience: 1
+  distill_evaluation:
+    mode: smoke
+    checkpoint_path: null
+    nmse_vs_pdr:
+      enabled: true
+      modulation: bpsk
+      data_snr_db: 15.0
+      pdr_db: [0.0, 20.0]
+      realizations: 2
+    nmse_vs_snr:
+      enabled: true
+      modulation: bpsk
+      data_snr_db: [10.0, 15.0]
+      pdr_db: 5.0
+      realizations: 2
+    ber_vs_pdr:
+      enabled: true
+      modulation: bpsk
+      data_snr_db: 18.0
+      pdr_db: [0.0, 20.0]
+      target_bit_errors: 1
+      max_bits: 4096
+      min_frames: 1
+      solver: dense
+    ber_vs_snr:
+      enabled: true
+      modulation: [bpsk]
+      data_snr_db: [10.0, 15.0]
+      pdr_db: 5.0
+      target_bit_errors: 1
+      max_bits: 4096
+      min_frames: 1
+      solver: dense
+  benchmark:
+    mode: smoke
+    iterations: 20
+    warmup: 3
+    modulation: bpsk
+    data_snr_db: 15.0
+    pdr_db: 5.0

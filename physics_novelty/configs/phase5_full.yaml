@@ -1,0 +1,4 @@
+inherits: phase5_base.yaml
+
+phase5_evaluation:
+  mode: full
