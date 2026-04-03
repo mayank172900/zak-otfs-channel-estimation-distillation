@@ -5,7 +5,6 @@ This repository contains a full research workflow around the paper **"Zak-OTFS w
 It includes:
 
 - a baseline reimplementation of the Zak-OTFS system and CNN estimator
-- an exploratory `physics_novelty/` branch for physics-aware refinement
 - a final `distill_novelty/` branch for lightweight teacher-student compression
 - an IEEE paper draft in `ieee_paper/` based on the final distillation results
 
@@ -20,8 +19,6 @@ The final project direction is an **accuracy-efficiency tradeoff study**: a stro
 ├── scripts/                     # Baseline generation, training, and evaluation scripts
 ├── tests/                       # Baseline test suite
 ├── report/                      # Reproduction report and notes
-├── novelty_paper/               # Early novelty branch (kept for reference)
-├── physics_novelty/             # Physics-aware refinement pipeline
 ├── distill_novelty/             # Final distillation pipeline
 ├── ieee_paper/                  # IEEE-format paper draft, figures, and tables
 ├── results/                     # Baseline compact result artifacts
@@ -48,22 +45,6 @@ Useful baseline entry points:
 - `scripts/generate_dataset.py`
 - `scripts/reproduce_all.py`
 - `run_all.sh`
-
-### Physics-Aware Refinement
-
-`physics_novelty/` contains a complete phased pipeline for:
-
-- Phase 1 dataset materialization
-- uncertainty-aware residual refinement
-- physics-consistency loss
-- confidence-guided detection
-- evaluation and ablations
-
-This branch is preserved as an experimental path and documented in:
-
-- `physics_novelty/README.md`
-- `physics_novelty/plan.md`
-- `physics_novelty/paper_plan.md`
 
 ### Distilled Lightweight Students
 
@@ -125,17 +106,23 @@ PYTHONPATH=src python scripts/smoke_test.py
 ### Distillation Tests
 
 ```bash
-PYTHONPATH=src:physics_novelty/src:distill_novelty/src pytest distill_novelty/tests -q
+PYTHONPATH=src:distill_novelty/src pytest distill_novelty/tests -q
 ```
 
 ## Reproducing the Distillation Results
 
-### 1. Generate Phase 1 distillation-ready data
+### 1. Prepare Phase 1 support manifests
 
-```bash
-python physics_novelty/scripts/generate_phase1_dataset.py --config physics_novelty/configs/phase1_train.yaml
-python physics_novelty/scripts/generate_phase1_dataset.py --config physics_novelty/configs/phase1_val.yaml
-```
+Place the train/val manifests expected by the distillation configs under:
+
+- `distill_novelty/artifacts/phase1_datasets/train_phase1.json`
+- `distill_novelty/artifacts/phase1_datasets/val_phase1.json`
+
+Each manifest should expose support-domain arrays for:
+
+- `H_obs`
+- `H_base`
+- `H_true`
 
 ### 2. Train the main student (`Lite-M` recommended)
 
@@ -209,7 +196,6 @@ This keeps the repository reproducible and still practical to clone and push.
 - Assumptions: `ASSUMPTIONS.md`
 - Reproduction gap summary: `REPRO_GAP.md`
 - Root-cause note: `ROOT_CAUSE_NOTE.md`
-- Physics novelty plan: `physics_novelty/plan.md`
 - IEEE paper draft: `ieee_paper/main.pdf`
 
 ## Source Context

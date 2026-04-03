@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from zakotfs_physics.dataset import load_phase1_manifest, open_phase1_arrays
+from .phase1_data import load_phase1_manifest, open_phase1_arrays
 
 
 def _stack_complex(arrays: dict[str, np.ndarray], stem: str, index: int) -> np.ndarray:

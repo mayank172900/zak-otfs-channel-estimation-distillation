@@ -11,8 +11,8 @@ distill_model:
   variant: lite_l
 
 distill_dataset:
-  train_manifest_path: ../physics_novelty/results/phase1_datasets/train_phase1.json
-  val_manifest_path: ../physics_novelty/results/phase1_datasets/val_phase1.json
+  train_manifest_path: ../distill_novelty/artifacts/phase1_datasets/train_phase1.json
+  val_manifest_path: ../distill_novelty/artifacts/phase1_datasets/val_phase1.json
   num_workers: 0
   mmap_mode: r
 
@@ -80,8 +80,8 @@ benchmark:
 
 smoke:
   distill_dataset:
-    train_manifest_path: ../physics_novelty/results/phase1_datasets/smoke_phase1.json
-    val_manifest_path: ../physics_novelty/results/phase1_datasets/smoke_phase1.json
+    train_manifest_path: ../distill_novelty/artifacts/phase1_datasets/smoke_phase1.json
+    val_manifest_path: ../distill_novelty/artifacts/phase1_datasets/smoke_phase1.json
   distill_training:
     mode: smoke
     batch_size: 2

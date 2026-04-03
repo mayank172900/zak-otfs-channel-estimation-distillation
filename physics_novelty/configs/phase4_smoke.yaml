@@ -1,4 +1,0 @@
-inherits: phase4_base.yaml
-
-phase2_training:
-  mode: smoke

@@ -50,3 +50,4 @@ physics_novelty/logs/checkpoints/
 
 # Distillation checkpoints and local logs
 distill_novelty/logs/checkpoints/
+distill_novelty/artifacts/phase1_datasets/*.npy

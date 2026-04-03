@@ -1,3 +1,0 @@
-inherits: adapter_eval.yaml
-
-device: mps

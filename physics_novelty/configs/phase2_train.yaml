@@ -1,4 +1,0 @@
-inherits: phase2_base.yaml
-
-phase2_training:
-  mode: full

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+import numpy as np
 import torch
 
 from zakotfs.params import load_config
 from zakotfs.utils import load_json
-from zakotfs_physics.dataset import generate_phase1_dataset
 from zakotfs_distill.benchmark import benchmark_student_models
 from zakotfs_distill.dataset import DistillDataset
 from zakotfs_distill.evaluation import run_distill_evaluation
@@ -16,18 +17,69 @@ from zakotfs_distill.training import distill_loss, predict_student_support, trai
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DISTILL_ROOT = REPO_ROOT / "distill_novelty"
-PHYSICS_ROOT = REPO_ROOT / "physics_novelty"
-PHASE1_SMOKE_CONFIG_PATH = PHYSICS_ROOT / "configs" / "phase1_smoke.yaml"
 DISTILL_SMOKE_CONFIG_PATH = DISTILL_ROOT / "configs" / "distill_smoke.yaml"
 
 
+def _write_array(path: Path, array: np.ndarray) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(path, array)
+
+
+def _create_synthetic_manifest(tmp_path: Path, size: int = 4, h: int = 7, w: int = 9) -> Path:
+    data_dir = tmp_path / "phase1"
+    sample_index = np.arange(size, dtype=np.int64)
+    sample_seed = 1000 + sample_index
+    pdr_db = np.linspace(0.0, 5.0, size, dtype=np.float32)
+    data_snr_db = np.full(size, 15.0, dtype=np.float32)
+    E_p = np.full(size, 1.0, dtype=np.float32)
+    rho_d = np.full(size, 0.5, dtype=np.float32)
+    rho_p = np.full(size, 0.5, dtype=np.float32)
+    noise_variance = np.full(size, 0.1, dtype=np.float32)
+
+    base = np.random.default_rng(7).standard_normal((size, h, w), dtype=np.float32)
+    _write_array(data_dir / "smoke_h_obs_re.npy", base)
+    _write_array(data_dir / "smoke_h_obs_im.npy", base * 0.1)
+    _write_array(data_dir / "smoke_h_base_re.npy", base * 0.8)
+    _write_array(data_dir / "smoke_h_base_im.npy", base * 0.05)
+    _write_array(data_dir / "smoke_h_true_re.npy", base * 0.85)
+    _write_array(data_dir / "smoke_h_true_im.npy", base * 0.08)
+    _write_array(data_dir / "smoke_pdr_db.npy", pdr_db)
+    _write_array(data_dir / "smoke_sample_index.npy", sample_index)
+    _write_array(data_dir / "smoke_sample_seed.npy", sample_seed)
+    _write_array(data_dir / "smoke_data_snr_db.npy", data_snr_db)
+    _write_array(data_dir / "smoke_E_p.npy", E_p)
+    _write_array(data_dir / "smoke_rho_d.npy", rho_d)
+    _write_array(data_dir / "smoke_rho_p.npy", rho_p)
+    _write_array(data_dir / "smoke_noise_variance.npy", noise_variance)
+
+    manifest = {
+        "generator": "distill_test_manifest",
+        "split": "smoke",
+        "size": size,
+        "shape": [h, w],
+        "include_physics_target": False,
+        "h_obs_re_path": "smoke_h_obs_re.npy",
+        "h_obs_im_path": "smoke_h_obs_im.npy",
+        "h_base_re_path": "smoke_h_base_re.npy",
+        "h_base_im_path": "smoke_h_base_im.npy",
+        "h_true_re_path": "smoke_h_true_re.npy",
+        "h_true_im_path": "smoke_h_true_im.npy",
+        "pdr_db_path": "smoke_pdr_db.npy",
+        "sample_index_path": "smoke_sample_index.npy",
+        "sample_seed_path": "smoke_sample_seed.npy",
+        "data_snr_db_path": "smoke_data_snr_db.npy",
+        "E_p_path": "smoke_E_p.npy",
+        "rho_d_path": "smoke_rho_d.npy",
+        "rho_p_path": "smoke_rho_p.npy",
+        "noise_variance_path": "smoke_noise_variance.npy",
+    }
+    manifest_path = data_dir / "smoke_phase1.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+    return manifest_path
+
+
 def _prepare_smoke_setup(tmp_path: Path):
-    phase1_config = load_config(PHASE1_SMOKE_CONFIG_PATH)
-    phase1_config.raw["paths"]["results_dir"] = str((tmp_path / "physics_results").resolve())
-    phase1_config.raw["paths"]["logs_dir"] = str((tmp_path / "physics_logs").resolve())
-    phase1_config.raw["paths"]["report_dir"] = str((tmp_path / "physics_report").resolve())
-    phase1_config.raw["device"] = "cpu"
-    manifest_path = generate_phase1_dataset(phase1_config, force=True)
+    manifest_path = _create_synthetic_manifest(tmp_path)
 
     distill_config = load_config(DISTILL_SMOKE_CONFIG_PATH)
     distill_config.raw["paths"]["results_dir"] = str((tmp_path / "distill_results").resolve())
