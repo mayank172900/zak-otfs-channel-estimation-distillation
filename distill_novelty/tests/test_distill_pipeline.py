@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from zakotfs.cnn_model import PaperCNN
 from zakotfs.params import load_config
 from zakotfs.utils import load_json
 from zakotfs_distill.benchmark import benchmark_student_models
@@ -80,11 +81,15 @@ def _create_synthetic_manifest(tmp_path: Path, size: int = 4, h: int = 7, w: int
 
 def _prepare_smoke_setup(tmp_path: Path):
     manifest_path = _create_synthetic_manifest(tmp_path)
+    teacher_ckpt = tmp_path / "teacher" / "full_cnn_best.pt"
+    teacher_ckpt.parent.mkdir(parents=True, exist_ok=True)
+    torch.save({"state_dict": PaperCNN().state_dict()}, teacher_ckpt)
 
     distill_config = load_config(DISTILL_SMOKE_CONFIG_PATH)
     distill_config.raw["paths"]["results_dir"] = str((tmp_path / "distill_results").resolve())
     distill_config.raw["paths"]["logs_dir"] = str((tmp_path / "distill_logs").resolve())
     distill_config.raw["paths"]["report_dir"] = str((tmp_path / "distill_report").resolve())
+    distill_config.raw["teacher_checkpoint_path"] = str(teacher_ckpt)
     distill_config.raw["distill_dataset"]["train_manifest_path"] = str(manifest_path)
     distill_config.raw["distill_dataset"]["val_manifest_path"] = str(manifest_path)
     distill_config.raw["smoke"]["distill_dataset"]["train_manifest_path"] = str(manifest_path)
