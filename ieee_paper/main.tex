@@ -1,0 +1,263 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage[T1]{fontenc}
+
+\graphicspath{{figures/}}
+\newtheorem{proposition}{Proposition}
+
+\begin{document}
+
+\title{Physics-Induced Compressibility in Zak-OTFS Channel Estimation: A Lightweight Distilled CNN}
+
+\author{
+\IEEEauthorblockN{Dikshant Jha, Jyotiraditya Singh Rathore, Madhav,\\
+Mayank Sharma, Rohit Kumar Mourya}
+\IEEEauthorblockA{Indian Institute of Technology Jodhpur, Jodhpur, Rajasthan, India\\
+\{b23es1014, b23es1017, b23es1021, b23es1023, b23es1029\}@iitj.ac.in}
+}
+
+\maketitle
+
+% ══════════════════════════════════════════════════════════════
+\begin{abstract}
+Zak-OTFS with superimposed spread pilots yields a compact twisted-support channel image in the delay-Doppler (DD) domain, but the original CNN-aided estimator still uses a 245k-parameter architecture. In this work, we show that the support-domain estimation task is structurally compressible for physical reasons. Under the fast effective-channel model adopted in our experiments, the true support image is a deterministic chirp-modulated sum of path-wise separable atoms; after dechirping, its rank is bounded by the number of physical paths. Smaller diagnostics under the slower reference model show that the same dechirped low-rank trend persists approximately. This suggests that the teacher CNN is likely overparameterized for support-domain denoising and that aggressive compression is possible. Guided by this observation, we distill the teacher into lightweight students (Lite-L, Lite-M, Lite-S) using a weighted teacher-imitation and ground-truth loss. Across the retained evaluation suite, the proposed Lite-M model, with only 22,789 parameters (a 10.8$\times$ reduction), keeps NMSE within 0.9\,dB of the teacher and maintains comparable BER at practical operating points, while providing a measured 1.9$\times$ inference speedup. We further show that a simple dechirp-plus-rank-$r$ projection already captures much of the conventional read-off denoising gain, reinforcing the low-dimensional support-geometry explanation. The accompanying implementation will be released to support further research.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Zak-OTFS, channel estimation, knowledge distillation, model compression, delay-Doppler, low-rank structure, CNN
+\end{IEEEkeywords}
+
+% ══════════════════════════════════════════════════════════════
+\section{Introduction}
+\label{sec:intro}
+
+Orthogonal time frequency space (OTFS) modulation and its principled Zak-transform formulation offer natural resilience to time-varying channels by operating in the delay-Doppler (DD) domain~\cite{hadani2017otfs, mohammed2021ddzc}. The Zak-OTFS framework with superimposed spread pilots~\cite{zakotfs2024} enables joint pilot and data transmission without guard-band overhead, while a CNN is reported to refine the conventional cross-ambiguity-based channel estimate to performance approaching the perfect-CSI bound.
+
+However, the baseline CNN architecture uses large convolutional kernels (up to $27 \times 27$) and 245,473 trainable parameters. A pure ``accuracy-efficiency tradeoff'' framing is not fully satisfying on its own: to justify compression as a research contribution, we need to explain why this DD-domain estimation task is compressible in the first place. Our central observation is that the twisted-support channel image used by Zak-OTFS is not a generic image. Under the fast effective-channel model adopted in our experiments, it is a deterministic chirp multiplied by a sum of path-wise separable delay and Doppler atoms. After dechirping, the support image becomes low-rank, with rank bounded by the physical path count. This suggests that the teacher CNN is likely overparameterized for a denoising task that is already constrained to a low-dimensional manifold, and it motivates distillation as the learned realization of that structure rather than a black-box compression trick.
+
+In this paper, we make the following contributions:
+\begin{enumerate}
+    \item We identify a physics-induced low-rank structure in Zak-OTFS support images: under the fast effective-channel construction used in our experiments, dechirping converts the twisted-support channel map into a sum of path-wise separable atoms, so its rank is bounded by the number of physical paths.
+    \item We show that this compressibility is not a numerical artifact: the exact rank statement follows from the implemented fast model, the slower reference model exhibits the same concentration numerically, and a simple dechirp-plus-truncated-SVD baseline already recovers much of the conventional denoising gain at a representative operating point.
+    \item We leverage this explanation to design and justify compact distilled students (Lite-L, Lite-M, Lite-S), and show that Lite-M provides the best practical tradeoff between compression, estimation quality, detection performance, and inference cost.
+\end{enumerate}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:system} summarizes the Zak-OTFS system model. Section~\ref{sec:baseline} describes our baseline reimplementation. Section~\ref{sec:distill} presents the proposed distillation method. Sections~\ref{sec:setup} and~\ref{sec:results} detail the experimental setup and results. Section~\ref{sec:complexity} provides the complexity analysis, and Section~\ref{sec:conclusion} concludes.
+
+% ══════════════════════════════════════════════════════════════
+\section{Related Work}
+\label{sec:related}
+
+\textbf{OTFS channel estimation.}
+Early OTFS systems use embedded pilot symbols in the DD grid with surrounding guard bands, requiring dedicated overhead that reduces spectral efficiency~\cite{raviteja2019otfs}. The Zak-OTFS formulation replaces embedded pilots with superimposed spread pilots that exploit the self-ambiguity lattice structure for direct channel read-off on a twisted support set, eliminating guard-band overhead entirely, although the read-off remains affected by DD aliasing, data interference, and noise~\cite{zakotfs2024}. Deep learning approaches for DD-domain channel estimation have been explored in~\cite{srivastava2023dnn_ce, li2022dd_channel}, though these typically target different pilot configurations.
+
+\textbf{Knowledge distillation.}
+Knowledge distillation~\cite{hinton2015distilling, buciluamodel2006} trains a compact student network to mimic a larger teacher. FitNets~\cite{romero2014fitnets} extended this to intermediate representations. Surveys such as~\cite{gou2021kd_survey} categorize approaches into response-based, feature-based, and relation-based distillation. Our approach uses response-based distillation (matching teacher outputs) combined with a ground-truth loss term, which provides a simple yet effective training signal for regression tasks.
+
+% ══════════════════════════════════════════════════════════════
+\section{System Model and Background}
+\label{sec:system}
+
+We briefly summarize the Zak-OTFS system from~\cite{zakotfs2024}. The system operates on a DD grid of size $M \times N$ with subcarrier spacing $\nu_p = 30$\,kHz and frame duration $T = N / \nu_p$. Data symbols and a spread pilot are superimposed in the DD domain. The spread pilot is constructed using a chirp spreading filter of order $q = 3$, and transmission uses a Gaussian-shaped (GS) pulse with parameters $\alpha_\tau = \alpha_\nu = 0.044$.
+
+At the receiver, the cross-ambiguity function between the received signal and the spread pilot is computed. The self-ambiguity lattice condition restricts non-zero contributions to a twisted support set of size $\Delta_k \times \Delta_l = 27 \times 43$. The conventional estimator reads off the channel directly from this support, but the estimate is corrupted by data interference, aliasing from the self-ambiguity sidelobes, and additive noise.
+
+The CNN-aided estimator treats the $27 \times 43$ support crop as a 2D image and processes the real and imaginary parts separately through a shared single-channel CNN to produce a refined estimate~\cite{zakotfs2024}. The refined estimate is re-embedded into the full DD grid for pilot cancellation and LMMSE data detection.
+
+The physical channel follows the Vehicular-A profile with $P = 6$ paths, maximum delay $\tau_{\max} = 2.51\,\mu$s, maximum Doppler $\nu_{\max} = 815$\,Hz, and fractional delay-Doppler shifts.
+
+Throughout the structural discussion, $H_{\mathrm{true}}$ denotes the true support-domain effective channel, $H_{\mathrm{obs}}$ denotes the raw read-off support estimate, and $\widehat{H}_{\mathrm{thr}}$ denotes the thresholded conventional estimate on the same twisted-support crop.
+
+\subsection{Structural Compressibility of the Support Image}
+
+The key observation behind this paper comes from the fast effective-channel model adopted in our experiments. Assume a fixed finite-$P$ channel realization. Let $\tau_k = k/B$ and $\nu_\ell = \ell/T$ denote the delay and Doppler coordinates over the cropped twisted support, and let $H_{\mathrm{true}}[k,\ell]$ denote the true support-domain effective channel. Under this model, the support image can be written as
+\begin{equation}
+H_{\mathrm{true}}[k,\ell] =
+e^{j 2 \pi \tau_k \nu_\ell}
+\sum_{i=1}^{P}
+\beta_i \, a_i[k] \, b_i[\ell],
+\label{eq:fast_factorization}
+\end{equation}
+where $\beta_i = h_i e^{-j 2 \pi \nu_i \tau_i}$ collects the path gain and deterministic phase, $a_i[k]$ is the GS delay autocorrelation evaluated at $\tau_k - \tau_i$, and $b_i[\ell]$ is the GS Doppler autocorrelation evaluated at $\nu_\ell - \nu_i$. Define the deterministic support chirp
+\begin{equation}
+C[k,\ell] = e^{j 2 \pi \tau_k \nu_\ell},
+\end{equation}
+the dechirped support image is
+\begin{equation}
+\widetilde{H}_{\mathrm{true}}[k,\ell] = C^*[k,\ell] H_{\mathrm{true}}[k,\ell]
+= \sum_{i=1}^{P} \beta_i \, a_i[k] \, b_i[\ell].
+\label{eq:dechirped_lowrank}
+\end{equation}
+Equation~\eqref{eq:dechirped_lowrank} is a sum of at most $P$ outer products. We record this explicitly because it is the central structural statement behind the paper.
+
+\begin{proposition}[Dechirped rank bound under the fast support model]
+\label{prop:fast_rank}
+For any fixed $P$-path channel realization under the fast effective-channel model, the dechirped support image $\widetilde{H}_{\mathrm{true}}$ can be written as a sum of at most $P$ separable delay-Doppler atoms. Consequently,
+\begin{equation}
+\mathrm{rank}\!\left(\widetilde{H}_{\mathrm{true}}\right) \le P.
+\end{equation}
+\end{proposition}
+\noindent\textit{Proof.} Equation~\eqref{eq:dechirped_lowrank} already expresses $\widetilde{H}_{\mathrm{true}}$ as a sum of at most $P$ rank-1 outer products, so its matrix rank cannot exceed $P$.\hfill$\blacksquare$
+
+The slower reference construction does not admit the same algebraic separation because the exact GS overlap term couples delay and Doppler, so we treat that case empirically only. Nevertheless, as shown in Section~\ref{sec:results}, the same dechirped low-rank trend remains numerically strong under the reference model.
+
+% ══════════════════════════════════════════════════════════════
+\section{Baseline Reimplementation}
+\label{sec:baseline}
+
+Since no official implementation of the original Zak-OTFS CNN estimator was available to us at the time of writing, we developed an independent reimplementation covering the full pipeline: DD-domain waveform construction, spread pilot generation with chirp filtering, effective channel simulation via the Vehicular-A model, cross-ambiguity computation, conventional read-off estimation, CNN training and inference, pilot cancellation, and LMMSE detection.
+
+The baseline CNN architecture exactly matches the specification in~\cite{zakotfs2024}:
+four convolutional layers with kernel sizes $27 \times 27$, $9 \times 9$, $5 \times 5$, and $15 \times 15$, channel progression $1 \to 64 \to 32 \to 32 \to 1$, ReLU activations after the first three layers, and a total of 245,473 trainable parameters (verified programmatically). Training uses the Adam optimizer~\cite{kingma2014adam} with learning rate $5 \times 10^{-4}$ and ReduceLROnPlateau scheduling over 50 epochs on 480k training samples at SNR = 15\,dB.
+
+We note that our reimplementation is structural: the CNN architecture and training protocol match the paper, but certain implementation details (exact effective-channel discretization, matched-filter sampling) are inferred from the paper description rather than from a reference codebase. Consequently, absolute NMSE and BER values should not be compared directly against the original publication, though relative trends between the teacher and student models within our pipeline are internally consistent.
+
+% ══════════════════════════════════════════════════════════════
+\section{Proposed Distillation Method}
+\label{sec:distill}
+
+The structural result above motivates our design choice: the student does not need to learn a generic image-restoration operator, but rather a compact denoising map toward a low-dimensional support manifold. We therefore keep the student family deliberately simple and focus on whether a small CNN can preserve the teacher's behavior once this physics-induced compressibility is taken into account.
+
+\subsection{Student Architecture}
+
+We design three student variants that mirror the teacher's split real/imaginary processing pattern. Each student uses a four-layer CNN with smaller channel counts and kernel sizes:
+
+\begin{itemize}
+    \item \textbf{Lite-L:} channels $(32, 16, 16)$, kernels $(15, 7, 5, 9)$, 40,049 params ($6.1\times$ compression).
+    \item \textbf{Lite-M:} channels $(24, 12, 12)$, kernels $(13, 7, 5, 9)$, 22,789 params ($10.8\times$ compression).
+    \item \textbf{Lite-S:} channels $(16, 8, 8)$, kernels $(11, 5, 3, 7)$, 6,137 params ($40.0\times$ compression).
+\end{itemize}
+
+All students use same-padding convolutions, ReLU activations after the first three layers, and a linear final layer, identical in structure to the teacher.
+
+\subsection{Distillation Loss}
+
+Let $\hat{H}_{\mathrm{teacher}}$ denote the frozen teacher's output, $H_{\mathrm{true}}$ the ground-truth support-domain channel, and $\hat{H}_{\mathrm{student}}$ the student's prediction. The training loss is:
+\begin{equation}
+    \mathcal{L} = \lambda_d \cdot \frac{\|\hat{H}_{\mathrm{student}} - \hat{H}_{\mathrm{teacher}}\|^2}{\|\hat{H}_{\mathrm{teacher}}\|^2} + \lambda_t \cdot \frac{\|\hat{H}_{\mathrm{student}} - H_{\mathrm{true}}\|^2}{\|H_{\mathrm{true}}\|^2}
+    \label{eq:loss}
+\end{equation}
+where $\lambda_d = 0.8$ and $\lambda_t = 0.2$ are the distillation and truth weights, respectively. The teacher loss encourages the student to reproduce the teacher's learned denoising behavior, while the truth loss provides a direct regression signal that can help the student avoid systematic biases inherited from the teacher. Both terms use normalized mean squared error to ensure scale-invariant gradients across varying channel realizations.
+
+\subsection{Training Protocol}
+
+Students are trained on the same 480k-sample dataset used for the teacher baseline, using Adam~\cite{kingma2014adam} with learning rate $1 \times 10^{-3}$, batch size 64, and ReduceLROnPlateau scheduling (factor 0.8, patience 2, minimum learning rate $10^{-6}$) over 30 epochs with early stopping (patience 5). The teacher network is frozen throughout student training. Input features ($H_{\mathrm{obs}}$) are shared, and teacher outputs ($\hat{H}_{\mathrm{teacher}}$) are computed on-the-fly from the frozen checkpoint. We note that the student training uses a higher initial learning rate and fewer epochs than the teacher (which uses $5 \times 10^{-4}$ over 50 epochs), reflecting the smaller model capacity and the stabilizing effect of the distillation loss.
+
+% ══════════════════════════════════════════════════════════════
+\section{Experimental Setup}
+\label{sec:setup}
+
+\subsection{Channel and System Parameters}
+
+All experiments use the Vehicular-A channel profile~\cite{veha_channel} with $M = 31$, $N = 37$, $q = 3$, GS pulse parameters $\alpha_\tau = \alpha_\nu = 0.044$, and fractional delay-Doppler shifts. The evaluation sweeps are:
+\begin{itemize}
+    \item \textbf{NMSE vs.\ PDR:} SNR\,=\,15\,dB, PDR ${\in}\{0,5,20,25,30,35\}$\,dB, BPSK, 200 realizations per point.
+    \item \textbf{NMSE vs.\ SNR:} PDR\,=\,5\,dB, SNR ${\in}\{10,15,20\}$\,dB, BPSK, 200~realizations.
+    \item \textbf{BER vs.\ PDR:} SNR\,=\,18\,dB, PDR ${\in}\{0,5,20\}$\,dB, BPSK, adaptive Monte~Carlo with $\geq$200 bit errors, $\geq$20 frames.
+    \item \textbf{BER vs.\ SNR:} PDR\,=\,5\,dB, SNR ${\in}\{10,15,18\}$\,dB, BPSK, adaptive Monte~Carlo.
+\end{itemize}
+
+\subsection{Benchmark Configuration}
+
+Inference latency is measured on an Apple MPS (Metal Performance Shaders) backend with batch size 1, 5 warmup iterations, and 50 timed iterations. We note that MPS kernel dispatch overhead means that latency does not scale linearly with parameter count, particularly for very small models.
+
+% ══════════════════════════════════════════════════════════════
+\section{Results and Discussion}
+\label{sec:results}
+
+\subsection{Structural Compressibility Diagnostics and Low-Rank Projection}
+
+We first validate the dechirped low-rank hypothesis numerically. Across 128 random Vehicular-A channels generated with the fast effective-channel model, the median singular-value tail energy beyond the physical path count $P=6$ is $1.1 \times 10^{-18}$, which is consistent with the exact rank bound in Proposition~\ref{prop:fast_rank}. In fact, the median dechirped rank required to capture 99.9\% of the energy is only 3. A smaller 24-sample diagnostic under the slower reference effective-channel model yields a median tail energy of $1.35 \times 10^{-9}$ beyond rank 6 and the same median 99.9\% energy rank of 3, so we describe that case as approximately low-rank rather than exactly rank-bounded.
+
+The left panel of Fig.~\ref{fig:structure} contrasts this with the observed read-off support image at SNR = 15\,dB and PDR = 5\,dB. The true support image remains sharply concentrated after dechirping, while the raw observation $H_{\mathrm{obs}}$ has a much fatter tail: its median tail energy beyond rank 6 is $1.25 \times 10^{-1}$ and its median rank required for 99\% energy is 20. The thresholded read-off estimate $\widehat{H}_{\mathrm{thr}}$ largely collapses back to a rank-2 structure, which already hints that the conventional estimator is acting as a crude projection toward the same low-dimensional manifold.
+
+The right panel of Fig.~\ref{fig:structure} makes this concrete. A simple non-learned baseline that dechirps the raw observation, keeps only the top-$r$ singular modes, and rechirps the result reduces the median NMSE from $3.31 \times 10^{-1}$ (raw read-off) to $5.70 \times 10^{-2}$ at rank 2, essentially matching the thresholded estimator's $5.84 \times 10^{-2}$. This SVD baseline is not proposed as a replacement for the learned CNN, but it is important supporting evidence: it shows that a large fraction of the denoising gain comes from projection toward a low-rank manifold rather than from generic image-processing capacity.
+
+Taken together, these checks argue that the observed compressibility is not an artifact of one implementation detail. The fast model gives an exact structural reason, the slower reference model preserves the same concentration numerically, and the raw observation itself is not low-rank. The CNN teacher and its distilled students therefore operate on a task that is structured denoising toward a physics-induced low-dimensional manifold, not unrestricted image restoration.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{support_structure_overview.pdf}
+    \caption{Structural-compressibility diagnostics after dechirping the support image. Left: the true support image under the fast model is exactly low-rank up to numerical precision, while the slower reference model remains sharply concentrated and the raw read-off observation has a much fatter singular tail. Right: a simple dechirp + rank-$r$ SVD projection already recovers most of the conventional thresholding gain at SNR = 15\,dB and PDR = 5\,dB.}
+    \label{fig:structure}
+\end{figure}
+
+\subsection{NMSE Performance}
+
+Fig.~\ref{fig:nmse_pdr} shows NMSE versus PDR at SNR = 15\,dB. All CNN-based methods dramatically outperform the conventional estimator, with the teacher achieving the lowest NMSE. Among the students, Lite-M closely tracks the teacher across all PDR values, with an NMSE gap of less than 1\,dB at PDR = 5\,dB ($5.25 \times 10^{-3}$ vs.\ $4.35 \times 10^{-3}$). Lite-L is slightly closer to the teacher, while Lite-S shows a more noticeable gap, particularly at low PDR where data interference is strongest.
+
+Fig.~\ref{fig:nmse_snr} shows NMSE versus data SNR at PDR = 5\,dB. The relative ordering is consistent across the SNR range: the teacher leads, followed closely by Lite-L and Lite-M, with Lite-S trailing but still far superior to the conventional estimator. All models maintain stable performance across the tested SNR range, suggesting good generalization from the training SNR of 15\,dB.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{nmse_vs_pdr.pdf}
+    \caption{NMSE vs.\ PDR at SNR = 15\,dB, BPSK. All distilled students substantially outperform the conventional estimator.}
+    \label{fig:nmse_pdr}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{nmse_vs_snr.pdf}
+    \caption{NMSE vs.\ data SNR at PDR = 5\,dB, BPSK. Performance ordering is consistent across the SNR range.}
+    \label{fig:nmse_snr}
+\end{figure}
+
+\subsection{BER Performance}
+
+Fig.~\ref{fig:ber_pdr} presents BER versus PDR at SNR = 18\,dB with BPSK and LMMSE detection. At the moderate operating point of PDR = 5\,dB, Lite-M achieves a BER of $4.90 \times 10^{-4}$, close to the teacher's $4.86 \times 10^{-4}$ and the perfect-CSI bound of $3.39 \times 10^{-4}$. The conventional estimator, in contrast, yields a BER of $6.23 \times 10^{-2}$, more than two orders of magnitude worse.
+
+At the challenging high-PDR point of 20\,dB, Lite-M exhibits a BER of $2.68 \times 10^{-3}$ compared to the teacher's $1.23 \times 10^{-3}$, reflecting the expected difficulty of distillation in the high-interference regime. Lite-S shows further degradation at this operating point with a BER of $1.12 \times 10^{-2}$.
+
+Fig.~\ref{fig:ber_snr} shows BER versus SNR at PDR = 5\,dB. At 18\,dB, Lite-M and Lite-L track the teacher tightly, with all three achieving BER below $5 \times 10^{-4}$.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{ber_vs_pdr.pdf}
+    \caption{BER vs.\ PDR at SNR = 18\,dB, BPSK, LMMSE detection.}
+    \label{fig:ber_pdr}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{ber_vs_snr.pdf}
+    \caption{BER vs.\ data SNR at PDR = 5\,dB, BPSK, LMMSE detection.}
+    \label{fig:ber_snr}
+\end{figure}
+
+% ══════════════════════════════════════════════════════════════
+\section{Complexity and Efficiency Analysis}
+\label{sec:complexity}
+
+Table~\ref{tab:complexity} summarizes the model complexity and measured inference latency. The teacher has 245,473 parameters and requires 3.20\,ms per inference. All three student models achieve substantial parameter reductions: $6.1\times$ for Lite-L, $10.8\times$ for Lite-M, and $40.0\times$ for Lite-S.
+
+Measured latency speedups range from $1.9\times$ to $2.1\times$, substantially smaller than the parameter reduction ratios. Notably, the latency ordering across students is not strictly monotonic with parameter count: Lite-S (6k params) and Lite-L (40k params) both measure approximately 1.52\,ms, while Lite-M (23k params) measures 1.68\,ms. This reflects the MPS backend's kernel dispatch overhead and memory-bandwidth characteristics, which dominate over pure arithmetic cost for these small models. Speedup ratios may differ on other hardware platforms (e.g., mobile NPUs, embedded GPUs) where compute-bound execution is more likely.
+
+\input{tables/complexity.tex}
+
+Table~\ref{tab:operating_points} compares all methods at a representative operating point (PDR = 5\,dB). Lite-M achieves NMSE of $5.25 \times 10^{-3}$ and BER of $4.90 \times 10^{-4}$ with only 22,789 parameters, representing a strong accuracy-efficiency tradeoff suitable for resource-constrained deployment.
+
+\input{tables/operating_points.tex}
+
+% ══════════════════════════════════════════════════════════════
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have presented a structure-aware interpretation of lightweight distillation for Zak-OTFS channel estimation. Under the fast effective-channel construction used in our baseline experiments, the twisted-support channel image becomes a sum of path-wise separable atoms after removing a deterministic support chirp, so its dechirped rank is bounded by the physical path count. Smaller diagnostics show that the slower reference construction remains approximately low-rank under the same transformation. This gives a concrete, physics-induced explanation for why the original 245k-parameter CNN can be compressed so aggressively.
+
+Guided by this observation, our Lite-M student achieves a $10.8\times$ parameter reduction (from 245k to 23k) with NMSE within 0.9\,dB of the teacher and comparable BER at moderate PDR values. Lite-L offers a higher-fidelity compact option, while Lite-S marks the onset of more noticeable degradation under extreme compression. We intentionally keep the structural claim narrow: the exact rank statement is tied to the fast effective-channel model adopted in our experiments, and the broader generality of the dechirped low-rank structure remains future work.
+
+Our implementation includes a complete baseline reimplementation (no official code accompanies~\cite{zakotfs2024}), the distilled students, and the new structural diagnostics that connect support-domain physics to model compression. A public code release is planned. These results also suggest that explicitly low-rank or factorized architectures may eventually replace generic CNNs for this task. Future work includes such structure-aware models, feature-based distillation, and evaluation on hardware platforms where latency scales more directly with compute.
+
+% ══════════════════════════════════════════════════════════════
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

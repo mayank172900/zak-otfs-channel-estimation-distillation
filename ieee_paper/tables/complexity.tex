@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Model complexity comparison. Latency measured on Apple MPS with batch size 1, averaged over 50 iterations.}
+\label{tab:complexity}
+\begin{tabular}{lrrr}
+\toprule
+Model & Params & Latency (ms) & Speedup \\
+\midrule
+Teacher CNN & 245,473 & 3.20 & 1.00$\times$ \\
+Lite-L & 40,049 & 1.52 & 2.10$\times$ \\
+Lite-M & 22,789 & 1.68 & 1.91$\times$ \\
+Lite-S & 6,137 & 1.52 & 2.11$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
