@@ -5,7 +5,7 @@
 - `main.tex` updated with the new structural-compressibility framing
 - `main.pdf` rebuilt successfully in this working copy
 - page count is now **6 pages**
-- author block updated with the IIT Jodhpur team and student emails
+- author block anonymized for blind review
 - new figure included:
   - `figures/support_structure_overview.pdf`
 
