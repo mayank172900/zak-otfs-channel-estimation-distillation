@@ -5,7 +5,7 @@
 - `main.tex` updated with the new structural-compressibility framing
 - `main.pdf` rebuilt successfully in this working copy
 - page count is now **6 pages**
-- author block updated with the IIT Jodhpur team and student emails
+- author block anonymized for public/blind-review sharing
 - new figure included:
   - `figures/support_structure_overview.pdf`
 
@@ -164,6 +164,7 @@ This made the paper stronger scientifically, but it also increased the draft fro
 
 ## Remaining manual items before submission
 
+- Restore final author names and affiliations when preparing the non-anonymous version
 - Re-verify bibliography metadata before submission
 - If desired, regenerate or recover the archived distillation JSON artifacts so the legacy performance plots/tables can also be reproduced from script in this working copy
 - Final co-author proofread
