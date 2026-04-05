@@ -112,6 +112,10 @@ The original paper, ``Zak-OTFS with Superimposed Spread Pilot CNN-Aided Channel 
 
 The paper matters for two reasons. First, it targets a physically meaningful high-mobility regime where accurate DD-domain channel estimation is difficult. Second, it proposes a CNN-aided improvement over the conventional read-off estimate without changing the overall Zak-OTFS detector structure. In other words, the learned part sits at a very important junction: if the support image is improved, both pilot cancellation and downstream data detection improve.
 
+At the signal-model level, the original method is built around the self-ambiguity structure of Zak-OTFS with Gaussian-shaped pulses. Instead of allocating a separate guard region for pilots, the transmitted frame carries both information symbols and a spread pilot together. The receiver then computes a pilot-based read-off over a carefully defined twisted-support crop. This crop is much smaller than the full DD grid, which is why the paper can reinterpret channel estimation as a compact image-restoration problem rather than a full-grid reconstruction problem.
+
+This is also why the original paper is interesting from a machine-learning perspective. The CNN does not estimate an arbitrary wireless channel from scratch; it denoises a structured, low-resolution complex support image that already contains physically meaningful geometry. The published work therefore sits at the intersection of communication-theory structure and learned image-style refinement, which made it a good candidate for both faithful reproduction and later compression.
+
 \keybox{\textbf{Original paper in one line.} The published method treats the twisted-support DD channel estimate as a small complex image and uses a CNN to denoise it before LMMSE detection.}
 
 At a high level, the original pipeline is:
@@ -124,6 +128,14 @@ At a high level, the original pipeline is:
 \end{enumerate}
 
 The original paper reports that its CNN-aided estimate approaches the perfect-CSI reference under its published evaluation setting. However, no official code accompanied the paper, so any later implementation effort must be framed as a careful reimplementation rather than a byte-for-byte reproduction of the authors' internal code.
+
+From a project standpoint, this missing-code issue matters a lot. It means we have to separate three things very clearly:
+\begin{itemize}
+    \item what the original paper \emph{states} explicitly,
+    \item what we can reproduce directly from those stated equations and settings,
+    \item and what must be implemented through documented engineering assumptions.
+\end{itemize}
+That distinction is the reason our baseline and novelty sections are written conservatively. We are extending a paper-defined method, not reverse-engineering a hidden official repository.
 
 \section{Our Baseline: What We Rebuilt, Why We Rebuilt It, and How It Compares}
 
@@ -169,18 +181,30 @@ Our baseline is faithful in \emph{structure} rather than guaranteed identical in
 
 \subsection{The Core Insight}
 
-Our novelty is \textbf{not} merely ``we compressed a CNN.'' The stronger insight is that the Zak-OTFS support-domain channel image is structurally compressible for physical reasons.
+Our novelty is \textbf{not} merely ``we compressed a CNN.'' The real novelty is that we found a physical reason why compression should work well for this task.
 
-Under the fast effective-channel model used in our implementation, the true support image can be written as a deterministic chirp multiplied by a sum of path-wise separable delay and Doppler atoms. After removing the known support chirp, the dechirped support image becomes a sum of outer products. With $P$ physical paths, this means the rank is bounded by $P$.
+The support-domain Zak-OTFS channel image is not an arbitrary image. It comes from a sparse wireless channel with only a few physical paths. In our default setting, the channel has $P=6$ paths. Each path contributes a structured delay-Doppler pattern to the support crop, and the full image is formed by adding only a small number of such patterns together. That already suggests that the target image should be much simpler than a generic image denoising problem.
+
+There is also a deterministic chirp embedded in the support image. When we remove this known chirp by dechirping, the true support map becomes much simpler to analyze. Under the fast effective-channel model used in our implementation, the dechirped support image can be written as a sum of path-wise separable delay and Doppler atoms. In matrix language, it becomes a sum of outer products. Since there are only $P$ physical paths, the rank is bounded by $P$.
+
+In simpler words, the true channel image is hiding inside a small, structured, low-dimensional family. The CNN is therefore not learning an unrestricted image-restoration task. It is mostly learning how to push a noisy observed support image back toward this physically constrained family of valid support images. Once we understand that, strong compression becomes much easier to justify: a smaller student does not need to reproduce every behavior of a large generic CNN, it only needs to learn the denoising map on a structured manifold.
 
 \keybox{\textbf{Main novelty statement.} The distilled student works well because the Zak-OTFS support image is not a generic image-denoising problem. After dechirping, the target lies on a low-dimensional physics-induced manifold.}
 
-This changes the interpretation of the whole project:
+This changes the interpretation of the whole project in a very direct way:
 \begin{itemize}
-    \item The teacher CNN is strong, but it is solving a structured denoising problem.
-    \item A compact student can imitate that behavior because the target geometry is already constrained.
-    \item Distillation is therefore justified by physics-induced compressibility, not just by trial-and-error model shrinking.
+    \item The teacher CNN is strong, but it is solving a \emph{structured} denoising problem rather than a free-form image task.
+    \item A compact student can imitate that behavior because the space of meaningful target images is already highly constrained.
+    \item Distillation is therefore justified by signal structure, not just by trial-and-error model shrinking.
 \end{itemize}
+
+The picture below summarizes the novelty in the simplest possible way. We start with a noisy support-domain observation that still looks image-like. Once we remove the known support chirp, the hidden structure becomes much easier to see: the true channel no longer behaves like a complicated arbitrary image, but like a small combination of path-driven patterns. That is exactly why a compact student can still work well. The student is learning the map back toward this structured family, not trying to solve an unrestricted image problem.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{novelty_flow.png}
+    \caption{Plain-language view of the novelty. The support image becomes much simpler after dechirping, which explains why a compact student can still recover most of the teacher's behavior.}
+\end{figure}
 
 \subsection{Evidence for the Structural Claim}
 
@@ -190,6 +214,10 @@ We validated this in three ways:
     \item \textbf{Reference-model support.} The slower reference construction does not admit the same clean symbolic factorization, but numerically it still shows sharply concentrated singular spectra.
     \item \textbf{Simple non-learned SVD baseline.} A dechirp-plus-truncated-SVD projection already recovers much of the conventional denoising gain, which shows that projection toward a low-rank manifold is doing real work.
 \end{enumerate}
+
+These checks matter because they answer the obvious skepticism: what if the student works only because the teacher happens to be redundant in a generic deep-learning sense? Our evidence points to a stronger explanation. The fast model gives an exact algebraic reason for low-rank structure, the slower reference model retains the same concentration trend numerically, and even a simple non-learned projection captures a meaningful part of the gain.
+
+\keybox{\textbf{Concrete example from our pipeline.} At the representative operating point SNR = 15\,dB and PDR = 5\,dB, the raw read-off support image has median NMSE $3.31\times10^{-1}$. If we only dechirp it, keep the top two singular modes, and rechirp it back, the median NMSE drops to $5.70\times10^{-2}$, which is already very close to the thresholded conventional estimate at $5.84\times10^{-2}$. This is a direct example showing that a large part of the denoising gain comes from moving the observation back toward a low-rank support manifold.}
 
 \begin{figure}[H]
     \centering
@@ -207,6 +235,10 @@ After establishing that the task itself is compressible, we distilled the 245,47
 \end{itemize}
 
 The student loss combines teacher imitation and ground-truth supervision, so the compact models inherit the teacher's denoising behavior while staying tied to the true support-domain channel. Among the three, \textbf{Lite-M emerged as the best overall tradeoff point}.
+
+The role of the three Lite models is also conceptually useful. Lite-L tells us how much compression is possible while staying very close to the teacher. Lite-M identifies the best practical operating point for actual use. Lite-S shows the point where aggressive compression starts to hurt more clearly. This gives the novelty a complete shape: we are not presenting only one smaller model, but an explainable compression frontier grounded in the structure of the Zak-OTFS support image.
+
+So the full novelty can be stated simply as follows: we first explain why the channel-estimation target is compressible, then we use distillation to build compact models that exploit that compressibility in practice, and finally we show that Lite-M gives the best balance between size, speed, and performance.
 
 \section{Results and Clear Comparisons}
 
